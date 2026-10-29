@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools==75.6.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orderbench"
+version = "1.0.0"
+description = "An RL environment for training and evaluating coding agents on realistic Python backend bugs."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = ["PyYAML==6.0.2"]
+
+[project.scripts]
+orderbench = "orderbench.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["harness"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["tasks/*/tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]
+"tasks/**" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["app", "harness", "examples", "scripts", "tests", "harness_tests"]
+explicit_package_bases = true
+mypy_path = "harness"
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "harness_tests.*"]
+disallow_untyped_decorators = false
