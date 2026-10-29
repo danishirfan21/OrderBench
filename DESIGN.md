@@ -81,10 +81,10 @@ verdicts apart from `duration_seconds`.
 
 ## Known limitations
 
-* **Docker was not available where this was developed.** The Docker backend is implemented and
-  wired into CI, but it has never been run by the author; the local fallback is what was run. The local backend's
-  network block is in-process only and it offers no filesystem isolation, so its verdicts report
-  `image_digest: "local-sandbox"` and should not be trusted for adversarial agents.
+* **The reference environment is GitHub Actions with Docker, not the author's laptop.** The author
+  has no local Docker; every claim of validity rests on the CI run (badge in the README). The local
+  backend is for iteration: it blocks the network in-process only and gives no filesystem, process or
+  network-namespace isolation, so it must not be used to score an adversarial agent.
 * The content scan is a denylist and can be bypassed by obfuscation (for example building a name
   from string pieces). The allowlist is the real boundary; the scan is defence in depth.
 * Held-out tests can overfit to the golden fix. Alternative correct solutions that change a public

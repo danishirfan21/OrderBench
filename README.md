@@ -2,6 +2,8 @@
 
 An RL environment for training and evaluating coding agents on realistic Python backend bugs.
 
+[![ci](https://github.com/danishirfan21/OrderBench/actions/workflows/ci.yml/badge.svg)](https://github.com/danishirfan21/OrderBench/actions/workflows/ci.yml)
+
 ## What it is
 
 OrderBench is a small but realistic FastAPI order-and-inventory service (SQLAlchemy 2.0, Pydantic v2,
@@ -39,8 +41,8 @@ make validate                     # every task: broken fails, golden passes, tra
 python examples/run_agent.py      # score a stub agent across all 8 tasks, print the resolve rate
 ```
 
-`make validate` uses Docker when a daemon is reachable and otherwise falls back to a local
-subprocess sandbox (see [Backends](#backends)). Requires Python 3.12+ and `make`.
+`make validate` uses Docker when a daemon is reachable and otherwise falls back to the weaker local
+sandbox (see [Execution model](#execution-model)). Requires Python 3.12+ and `make`.
 
 ## Task format
 
@@ -125,17 +127,21 @@ python examples/run_agent.py --agent oracle
 python examples/run_agent.py --agent empty
 ```
 
-## Backends
+## Execution model
 
-| Backend | Isolation | Digest in verdict |
-|---|---|---|
-| `docker` (reference) | image pinned by sha256 digest, `--network none`, read-only root, all capabilities dropped, non-root uid 10001, workspace mounted read-only | the image digest |
-| `local` (fallback) | plain subprocess; network blocked **in-process only** by the pytest guard plugin; no filesystem isolation beyond the tamper checks | `local-sandbox` |
+**GitHub Actions running the Docker backend is the reference environment**, and the CI badge above
+is the evidence: every push builds the digest-pinned image, validates each of the 8 tasks in its own
+matrix job under Docker (`--network none`), runs the verdict, trap, tamper and determinism tests
+under Docker, scores the stub agents, and runs the quickstart from a fresh clone.
 
-`--backend auto` (default) picks Docker when a daemon is reachable and warns when it falls back.
-The local backend exists so the environment can be developed and validated without Docker; use Docker
-for any evaluation whose result you intend to trust. Rewards from the two backends are expected to
-agree on honest patches, but only Docker enforces the isolation claims in DESIGN.md.
+| Backend | What it gives you |
+|---|---|
+| `docker` (reference) | image pinned by sha256 digest, `--network none` (a real network namespace), read-only root filesystem, all capabilities dropped, non-root uid 10001, workspace mounted read-only, PID/memory/CPU limits. The verdict carries the image id. Anyone with Docker locally gets the same guarantees as CI. |
+| `local` (iteration only) | A subprocess on your machine. The network is blocked **in-process only** by the pytest guard plugin (non-loopback `connect` and name resolution raise). It provides **no filesystem isolation** (the process runs as you and can write anywhere you can), **no process isolation** (it can spawn processes and is not resource-limited), and **no network namespace** (code that avoids Python's `socket` module, for example by spawning another program, could reach the network). Tamper checks still run, but they detect rather than prevent. Verdicts report `image_digest: "local-sandbox"`. |
+
+`--backend auto` (default) picks Docker when a daemon is reachable and warns when it falls back to
+local. Use local for fast iteration while developing tasks or agents; do not use it to score an
+untrusted agent or to publish numbers.
 
 ## Development
 
