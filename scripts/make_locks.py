@@ -38,6 +38,7 @@ RUNTIME: dict[str, str] = {
 MARKERS = {"colorama": 'sys_platform == "win32"'}
 RUNTIME["colorama"] = "0.4.6"
 DEV: dict[str, str] = {
+    "ast-serialize": "0.13.1",
     "librt": "0.16.0",
     "mypy": "2.4.1",
     "mypy-extensions": "1.1.0",
