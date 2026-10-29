@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: make install
+      - run: make lint
+      - name: Unit tests (app + harness)
+        run: make test
+      - name: Validate every task in the pinned, network-less Docker sandbox
+        run: make validate BACKEND=docker
+      - name: Determinism test
+        run: make determinism
