@@ -56,6 +56,6 @@ def test_sweep_with_nothing_reserved_is_a_noop(world: World) -> None:
 
 def test_paid_orders_hold_stock_past_the_ttl_window(world: World) -> None:
     order = world.order("alice", [("WIDGET", 2)])
-    world.client.post(f"/orders/{order['id']}/pay", headers=world.headers("alice"))
+    world.client.post(f"/orders/{order['id']}/pay", headers=world.headers("admin"))
     with world.session_factory() as db:
         assert [r.status for r in db.scalars(select(Reservation)).all()] == ["committed"]

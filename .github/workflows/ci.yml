@@ -4,10 +4,12 @@ on:
   push:
   pull_request:
 
+env:
+  ORDERBENCH_BACKEND: docker
+
 jobs:
-  validate:
+  lint:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -15,9 +17,88 @@ jobs:
           python-version: "3.12"
       - run: make install
       - run: make lint
-      - name: Unit tests (app + harness)
-        run: make test
-      - name: Validate every task in the pinned, network-less Docker sandbox
-        run: make validate BACKEND=docker
-      - name: Determinism test
-        run: make determinism
+      - name: App + harness unit tests (host)
+        run: ORDERBENCH_BACKEND=local make test
+
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        task:
+          - pagination_offset
+          - fractional_quantity
+          - failed_order_reservations
+          - reservation_sweep_timezone
+          - order_list_joined_totals
+          - order_access_check
+          - stale_stock_reservation
+          - subscription_anchor_drift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: make install
+      - name: Build the digest-pinned image (no layer cache)
+        run: docker build --no-cache -t orderbench-env:1.0.0 .
+      - name: Validate ${{ matrix.task }} under Docker (--network none)
+        run: orderbench validate-all --backend docker --task ${{ matrix.task }}
+
+  harness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: make install
+      - run: docker build --no-cache -t orderbench-env:1.0.0 .
+      - name: Verdict, trap, tamper and determinism tests under Docker
+        run: >
+          python -m pytest harness_tests/test_verdict.py harness_tests/test_traps.py
+          harness_tests/test_tamper.py harness_tests/test_determinism.py -v
+      - name: Determinism via the CLI, two runs of the same patch
+        run: |
+          orderbench evaluate --task order_access_check --patch tasks/order_access_check/golden.patch --json --backend docker > run1.json
+          orderbench evaluate --task order_access_check --patch tasks/order_access_check/golden.patch --json --backend docker > run2.json
+          python - <<'PY'
+          import json
+          a, b = (json.load(open(f)) for f in ("run1.json", "run2.json"))
+          a["duration_seconds"] = b["duration_seconds"] = 0
+          assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True), "verdicts differ"
+          assert a["resolved"] and a["image_digest"].startswith("sha256:"), a
+          print("verdicts identical; image", a["image_digest"])
+          PY
+      - name: Stub agents (oracle must be 8/8, empty 0/8)
+        run: |
+          python examples/run_agent.py --agent oracle --backend docker | tee oracle.txt
+          python examples/run_agent.py --agent empty --backend docker | tee empty.txt
+          grep -q "resolve rate: 8/8" oracle.txt
+          grep -q "resolve rate: 0/8" empty.txt
+
+  fresh-clone:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Clone into a clean directory and run the README quickstart verbatim
+        run: |
+          d=$(mktemp -d)
+          git clone "https://github.com/${{ github.repository }}.git" "$d/OrderBench"
+          cd "$d/OrderBench"
+          git checkout "${{ github.sha }}"
+          python - <<'PY'
+          import re, subprocess, sys
+          text = open("README.md").read()
+          block = re.search(r"## Quickstart\s+```bash\n(.*?)```", text, re.S).group(1)
+          cmds = [l.split("#")[0].strip() for l in block.splitlines() if l.split("#")[0].strip()]
+          print(cmds)
+          for c in cmds:
+              print("$", c, flush=True)
+              subprocess.run(c, shell=True, check=True)
+          PY

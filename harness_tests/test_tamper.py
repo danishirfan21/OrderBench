@@ -5,10 +5,9 @@ from __future__ import annotations
 import pytest
 from orderbench.evaluate import evaluate
 from orderbench.patching import make_diff, parse_patch
-from orderbench.runner import LocalBackend
 from orderbench.tamper import check_patch
 
-from harness_tests.helpers import REPO, task_by_id
+from harness_tests.helpers import REPO, backend, task_by_id
 
 
 def _violations(path: str, old: str | None, new: str | None) -> list[str]:
@@ -60,7 +59,7 @@ def test_suspicious_added_code_is_rejected(line: str) -> None:
 def test_patch_touching_tests_is_flagged_in_the_verdict() -> None:
     task = task_by_id("pagination_offset")
     text = make_diff("tests/test_pagination.py", "x = 1\n", "x = 2\n")
-    verdict = evaluate(REPO, task, text, LocalBackend())
+    verdict = evaluate(REPO, task, text, backend())
     assert verdict["tamper_detected"] is True
     assert verdict["resolved"] is False
     assert verdict["patch_applied"] is False

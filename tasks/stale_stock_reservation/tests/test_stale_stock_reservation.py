@@ -21,7 +21,8 @@ def test_a_stale_session_cannot_oversell(world: World) -> None:
     first, second = _make_orders(world, 2)
     session_a, session_b = world.session_factory(), world.session_factory()
     try:
-        assert session_a.get(StockLevel, pid) is not None  # checkout A has looked at the stock
+        looked_at = session_a.get(StockLevel, pid)  # checkout A has looked at the stock
+        assert looked_at is not None
         inventory_service.reserve(session_b, pid, 4, first, FROZEN_NOW, 900)
         session_b.commit()  # checkout B reserves 4 of 5 in the meantime
         with pytest.raises(InsufficientStockError):
@@ -38,7 +39,8 @@ def test_a_stale_session_does_not_erase_a_concurrent_reservation(world: World) -
     first, second = _make_orders(world, 2)
     session_a, session_b = world.session_factory(), world.session_factory()
     try:
-        assert session_a.get(StockLevel, pid) is not None
+        looked_at = session_a.get(StockLevel, pid)
+        assert looked_at is not None
         inventory_service.reserve(session_b, pid, 2, first, FROZEN_NOW, 900)
         session_b.commit()
         inventory_service.reserve(session_a, pid, 2, second, FROZEN_NOW, 900)

@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 
 from orderbench.evaluate import dump_verdict, evaluate
-from orderbench.runner import LocalBackend
 
-from harness_tests.helpers import REPO, task_by_id
+from harness_tests.helpers import REPO, backend, task_by_id
 
 
 def _stable(verdict: dict[str, object]) -> str:
@@ -17,8 +16,8 @@ def _stable(verdict: dict[str, object]) -> str:
 def test_identical_runs_give_identical_verdicts() -> None:
     task = task_by_id("pagination_offset")
     golden = task.golden_patch.read_text(encoding="utf-8")
-    first = evaluate(REPO, task, golden, LocalBackend())
-    second = evaluate(REPO, task, golden, LocalBackend())
+    first = evaluate(REPO, task, golden, backend())
+    second = evaluate(REPO, task, golden, backend())
     assert first["resolved"] is True
     assert _stable(first) == _stable(second)
     assert _stable(first).encode() == _stable(second).encode()
@@ -27,7 +26,7 @@ def test_identical_runs_give_identical_verdicts() -> None:
 
 def test_failing_verdicts_are_deterministic_too() -> None:
     task = task_by_id("stale_stock_reservation")
-    first = evaluate(REPO, task, "", LocalBackend())
-    second = evaluate(REPO, task, "", LocalBackend())
+    first = evaluate(REPO, task, "", backend())
+    second = evaluate(REPO, task, "", backend())
     assert first["resolved"] is False
     assert _stable(first) == _stable(second)

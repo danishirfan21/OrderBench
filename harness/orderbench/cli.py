@@ -85,6 +85,8 @@ def cmd_validate_all(args: argparse.Namespace) -> int:
     except TaskError as exc:
         print(f"FAIL task schema: {exc}")
         return 1
+    if args.task:
+        tasks = [_find(tasks, tid) for tid in args.task]
     backend = select_backend(repo_root, args.backend)
     failures = 0
     for task in tasks:
@@ -120,6 +122,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=cmd_evaluate)
 
     p = sub.add_parser("validate-all", help="check every task's broken/golden/trap behaviour")
+    p.add_argument("--task", action="append", help="limit to this task (repeatable)")
     p.add_argument("--backend", choices=["auto", "docker", "local"])
     p.set_defaults(func=cmd_validate_all)
 

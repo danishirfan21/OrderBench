@@ -110,7 +110,7 @@ root = find_repo_root()
 backend = select_backend(root)
 for task in load_all(root / "tasks"):
     broken_checkout(root, task, workdir := Path("/tmp") / task.id)
-    patch = my_agent(workdir, task.statement)          # your agent edits files, returns a diff
+    patch = my_agent(workdir, task.statement)  # your agent edits files, returns a diff
     verdict = evaluate(root, task, patch, backend)
     reward = 1.0 if verdict["resolved"] else 0.0
 ```
