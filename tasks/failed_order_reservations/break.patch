@@ -1,0 +1,12 @@
+diff --git a/app/services/order_service.py b/app/services/order_service.py
+--- a/app/services/order_service.py
++++ b/app/services/order_service.py
+@@ -54,8 +54,6 @@
+         order.total_cents = total
+         db.commit()
+     except InsufficientStockError as exc:
+-        # Undo every reservation made for earlier lines before recording the rejection.
+-        db.rollback()
+         AuditRepository(db).add("order.rejected", exc.message, user_id, now)
+         db.commit()
+         raise

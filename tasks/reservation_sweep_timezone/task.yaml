@@ -1,0 +1,77 @@
+id: reservation_sweep_timezone
+title: Reservation sweep and active-reservation view return 500
+difficulty: medium
+bug_class: timezone-naive datetime compared with aware datetime
+statement: 'Since we went live, the nightly job that releases abandoned carts has been failing, and so
+  has
+
+  the admin "active reservations" screen. Both answer with a 500 as soon as at least one
+
+  reservation exists (an empty database is fine, which is why staging looked healthy). The server
+
+  log has a TypeError about comparing or subtracting datetimes, but only on reservations read
+
+  back from the database, never on ones created in the same request. Because the sweep never runs,
+
+  abandoned carts hold stock forever (rule I-4).
+
+
+  Reservations should expire exactly at their deadline, and the admin screen should show the
+
+  whole seconds remaining.
+
+  '
+fail_to_pass:
+- tests/held_out/reservation_sweep_timezone/test_reservation_sweep_timezone.py::test_sweep_releases_expired_reservations
+- tests/held_out/reservation_sweep_timezone/test_reservation_sweep_timezone.py::test_sweep_keeps_live_reservations
+- tests/held_out/reservation_sweep_timezone/test_reservation_sweep_timezone.py::test_reservation_expires_exactly_at_its_deadline
+- tests/held_out/reservation_sweep_timezone/test_reservation_sweep_timezone.py::test_active_listing_reports_time_remaining
+pass_to_pass:
+- tests/held_out/reservation_sweep_timezone/test_reservation_sweep_timezone.py::test_committed_reservations_survive_the_sweep
+- tests/test_billing.py::test_add_months_clamps_to_month_length
+- tests/test_billing.py::test_change_plan_edge_cases
+- tests/test_billing.py::test_downgrade_produces_a_credit
+- tests/test_billing.py::test_only_admin_creates_plans
+- tests/test_billing.py::test_proration_unit_half_period
+- tests/test_billing.py::test_renewal_requires_period_end
+- tests/test_billing.py::test_round_half_up[value0-1]
+- tests/test_billing.py::test_round_half_up[value1--1]
+- tests/test_billing.py::test_round_half_up[value2-0]
+- tests/test_billing.py::test_round_half_up[value3-2]
+- tests/test_billing.py::test_round_half_up[value4--2]
+- tests/test_billing.py::test_subscribe_sets_first_period_and_invoice
+- tests/test_billing.py::test_subscriptions_are_private
+- tests/test_billing.py::test_upgrade_mid_period_prorates_to_the_second
+- tests/test_inventory.py::test_admin_endpoints_require_admin
+- tests/test_inventory.py::test_paid_orders_hold_stock_past_the_ttl_window
+- tests/test_inventory.py::test_reservation_records_expiry_from_the_clock
+- tests/test_inventory.py::test_reserving_against_a_missing_stock_row_is_not_found
+- tests/test_inventory.py::test_sequential_reservations_never_oversell
+- tests/test_inventory.py::test_sweep_with_nothing_reserved_is_a_noop
+- tests/test_orders.py::test_admin_can_read_any_order
+- tests/test_orders.py::test_anonymous_cannot_order
+- tests/test_orders.py::test_audit_log_is_admin_only
+- tests/test_orders.py::test_confirmation_runs_as_background_task
+- tests/test_orders.py::test_customers_cannot_list_other_users_orders
+- tests/test_orders.py::test_empty_and_oversized_item_lists_rejected
+- tests/test_orders.py::test_fulfilment_consumes_stock
+- tests/test_orders.py::test_insufficient_stock_is_409
+- tests/test_orders.py::test_missing_order_is_404
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_0]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_1]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3]
+- tests/test_orders.py::test_order_listing_is_scoped_to_the_caller
+- tests/test_orders.py::test_other_customer_cannot_read_order
+- tests/test_orders.py::test_owner_can_read_own_order
+- tests/test_orders.py::test_pay_then_cancel_releases_stock
+- tests/test_orders.py::test_place_order_reserves_stock_and_totals
+- tests/test_orders.py::test_rejected_order_is_audited
+- tests/test_orders.py::test_repeated_products_are_merged
+- tests/test_orders.py::test_selling_exactly_the_remaining_stock_succeeds
+- tests/test_orders.py::test_unknown_product_is_404_and_leaves_stock_alone
+- tests/test_orders.py::test_unpaid_order_cannot_be_fulfilled
+- tests/test_orders.py::test_unusable_quantities_are_rejected[1001]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[None]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[abc]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[quantity3]
+timeout_seconds: 120

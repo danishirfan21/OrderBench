@@ -1,0 +1,37 @@
+diff --git a/app/services/inventory_service.py b/app/services/inventory_service.py
+--- a/app/services/inventory_service.py
++++ b/app/services/inventory_service.py
+@@ -25,26 +25,13 @@
+     now: datetime,
+     ttl_seconds: int,
+ ) -> Reservation:
+-    """Hold ``quantity`` units; the check and the increment are one atomic statement."""
+-    claimed = db.execute(
+-        update(StockLevel)
+-        .where(
+-            StockLevel.product_id == product_id,
+-            StockLevel.on_hand - StockLevel.reserved >= quantity,
+-        )
+-        .values(reserved=StockLevel.reserved + quantity)
+-        .execution_options(synchronize_session=False)
+-    )
+-    if claimed.rowcount == 0:
+-        row = db.execute(
+-            select(StockLevel.on_hand, StockLevel.reserved).where(
+-                StockLevel.product_id == product_id
+-            )
+-        ).one_or_none()
+-        if row is None:
+-            raise NotFoundError(f"no stock record for product {product_id}")
+-        raise InsufficientStockError(product_id, quantity, row.on_hand - row.reserved)
+-    _expire_cached_stock(db, product_id)
++    """Hold ``quantity`` units of a product for an order."""
++    stock = db.get(StockLevel, product_id)
++    if stock is None:
++        raise NotFoundError(f"no stock record for product {product_id}")
++    if available(stock) < quantity:
++        raise InsufficientStockError(product_id, quantity, available(stock))
++    stock.reserved += quantity
+     reservation = Reservation(
+         order_id=order_id,
+         product_id=product_id,

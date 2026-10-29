@@ -1,0 +1,12 @@
+diff --git a/app/services/billing_service.py b/app/services/billing_service.py
+--- a/app/services/billing_service.py
++++ b/app/services/billing_service.py
+@@ -60,7 +60,7 @@
+         raise ConflictError("current period has not ended")
+     new_start = as_utc(sub.period_end)
+     sub.period_start = new_start
+-    sub.period_end = add_months(new_start, 1, new_start.day)
++    sub.period_end = add_months(new_start, 1, sub.anchor_day)
+     BillingRepository(db).add_invoice(
+         Invoice(
+             subscription_id=sub.id,

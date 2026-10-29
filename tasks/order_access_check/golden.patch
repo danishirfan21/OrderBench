@@ -1,0 +1,12 @@
+diff --git a/app/routers/orders.py b/app/routers/orders.py
+--- a/app/routers/orders.py
++++ b/app/routers/orders.py
+@@ -23,7 +23,7 @@
+ 
+ def _load_authorized(db: DB, user: CurrentUser, order_id: int) -> Order:
+     order = order_service.get_order(db, order_id)
+-    ensure_owner_or_admin(user, order.id)
++    ensure_owner_or_admin(user, order.user_id)
+     return order
+ 
+ 

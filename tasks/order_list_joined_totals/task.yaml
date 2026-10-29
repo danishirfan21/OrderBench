@@ -1,0 +1,66 @@
+id: order_list_joined_totals
+title: Order list totals and page sizes are wrong for multi-item orders
+difficulty: medium
+bug_class: N+1 'optimisation' (join) that breaks pagination assumptions
+statement: 'After last sprint''s performance work on the orders screen (we were seeing one extra query
+  per
+
+  order), customers with big baskets see strange things: a customer with 3 orders of 3 items each
+
+  gets `total: 9` and `pages: 5` with a page size of 2, the first page shows only one order, and
+
+  orders appear to be missing between pages. Filtering by product shows the same inflation. The
+
+  numbers are right for customers whose orders all contain a single item.
+
+
+  Rule P-2: `total` counts matching orders, and each page holds `size` orders. We still don''t
+
+  want the per-order query back.
+
+  '
+fail_to_pass:
+- tests/held_out/order_list_joined_totals/test_order_list_joined_totals.py::test_total_counts_orders_not_item_rows
+- tests/held_out/order_list_joined_totals/test_order_list_joined_totals.py::test_page_size_counts_orders
+- tests/held_out/order_list_joined_totals/test_order_list_joined_totals.py::test_product_filter_still_counts_each_order_once
+pass_to_pass:
+- tests/test_orders.py::test_admin_can_read_any_order
+- tests/test_orders.py::test_anonymous_cannot_order
+- tests/test_orders.py::test_audit_log_is_admin_only
+- tests/test_orders.py::test_confirmation_runs_as_background_task
+- tests/test_orders.py::test_customers_cannot_list_other_users_orders
+- tests/test_orders.py::test_empty_and_oversized_item_lists_rejected
+- tests/test_orders.py::test_fulfilment_consumes_stock
+- tests/test_orders.py::test_insufficient_stock_is_409
+- tests/test_orders.py::test_missing_order_is_404
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_0]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_1]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3]
+- tests/test_orders.py::test_order_listing_is_scoped_to_the_caller
+- tests/test_orders.py::test_other_customer_cannot_read_order
+- tests/test_orders.py::test_owner_can_read_own_order
+- tests/test_orders.py::test_pay_then_cancel_releases_stock
+- tests/test_orders.py::test_place_order_reserves_stock_and_totals
+- tests/test_orders.py::test_rejected_order_is_audited
+- tests/test_orders.py::test_repeated_products_are_merged
+- tests/test_orders.py::test_selling_exactly_the_remaining_stock_succeeds
+- tests/test_orders.py::test_unknown_product_is_404_and_leaves_stock_alone
+- tests/test_orders.py::test_unpaid_order_cannot_be_fulfilled
+- tests/test_orders.py::test_unusable_quantities_are_rejected[1001]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[None]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[abc]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[quantity3]
+- tests/test_pagination.py::test_invalid_paging_parameters_rejected
+- tests/test_pagination.py::test_list_metadata_reports_total_and_pages
+- tests/test_pagination.py::test_make_page_carries_metadata
+- tests/test_pagination.py::test_page_count
+- tests/test_pagination.py::test_page_past_the_end_is_empty
+- tests/test_products.py::test_bad_sort_rejected
+- tests/test_products.py::test_filter_totals
+- tests/test_products.py::test_get_product_and_404
+- tests/test_products.py::test_invalid_product_payloads_rejected
+- tests/test_products.py::test_only_admin_creates_products
+- tests/test_products.py::test_sku_is_normalised_and_unique
+- tests/test_products.py::test_stock_cannot_drop_below_reserved
+- tests/test_products.py::test_stock_view_and_update
+timeout_seconds: 120

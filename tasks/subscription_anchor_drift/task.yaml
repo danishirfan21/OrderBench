@@ -1,0 +1,55 @@
+id: subscription_anchor_drift
+title: Customers billed on the 31st drift to the 28th and are prorated wrongly
+difficulty: hard
+bug_class: proration / period arithmetic error at a month boundary
+statement: 'Finance flagged a pattern in subscription invoices. Customers who subscribed on the 31st (or
+  the
+
+  30th, or 29th) are renewed correctly in February, clamped to the 28th (or 29th in a leap year),
+
+  but they are then renewed on the 28th in March, April and every month after that, instead of
+
+  going back to the 31st. Their periods are shorter than they should be, so mid-period plan
+
+  upgrades are being prorated against the wrong number of days: one customer on a 3000-cent plan
+
+  upgrading to a 6000-cent plan on March 16 was charged a proration of 1286 cents, but the 31-day
+
+  March period (Feb 28 to Mar 31) puts the right charge at 1452.
+
+
+  Rule B-2 says the anchor day never changes. Customers who subscribed on days 1-28 are fine.
+
+  '
+fail_to_pass:
+- tests/held_out/subscription_anchor_drift/test_subscription_anchor_drift.py::test_clamped_month_does_not_shift_later_periods
+- tests/held_out/subscription_anchor_drift/test_subscription_anchor_drift.py::test_proration_in_a_31_day_period_after_a_short_month
+- tests/held_out/subscription_anchor_drift/test_subscription_anchor_drift.py::test_leap_year_clamp_returns_to_the_anchor
+pass_to_pass:
+- tests/test_auth.py::test_login_and_me
+- tests/test_auth.py::test_login_failures_are_indistinguishable
+- tests/test_auth.py::test_missing_or_garbage_token_is_rejected
+- tests/test_auth.py::test_password_is_stored_hashed
+- tests/test_auth.py::test_register_creates_customer
+- tests/test_auth.py::test_register_duplicate_email_conflicts
+- tests/test_auth.py::test_register_rejects_bad_email_and_short_password
+- tests/test_auth.py::test_token_expires_on_the_injected_clock
+- tests/test_billing.py::test_add_months_clamps_to_month_length
+- tests/test_billing.py::test_change_plan_edge_cases
+- tests/test_billing.py::test_downgrade_produces_a_credit
+- tests/test_billing.py::test_only_admin_creates_plans
+- tests/test_billing.py::test_proration_unit_half_period
+- tests/test_billing.py::test_renewal_requires_period_end
+- tests/test_billing.py::test_round_half_up[value0-1]
+- tests/test_billing.py::test_round_half_up[value1--1]
+- tests/test_billing.py::test_round_half_up[value2-0]
+- tests/test_billing.py::test_round_half_up[value3-2]
+- tests/test_billing.py::test_round_half_up[value4--2]
+- tests/test_billing.py::test_subscribe_sets_first_period_and_invoice
+- tests/test_billing.py::test_subscriptions_are_private
+- tests/test_billing.py::test_upgrade_mid_period_prorates_to_the_second
+- tests/test_security.py::test_hash_roundtrip_and_salting
+- tests/test_security.py::test_token_roundtrip
+- tests/test_security.py::test_token_wrong_secret_rejected
+- tests/test_security.py::test_verify_rejects_malformed_hash
+timeout_seconds: 180

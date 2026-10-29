@@ -1,0 +1,81 @@
+id: order_access_check
+title: Customers can read and cancel other customers' orders
+difficulty: medium
+bug_class: authorization check applied to the wrong object
+statement: 'Security review finding: logged in as a regular customer I could open somebody else''s order
+  by
+
+  guessing ids. I tried it on staging with two accounts. My second account could `GET`, pay and
+
+  cancel an order that belonged to the first account, but only for some order numbers; for most
+
+  numbers I correctly got a 403. Meanwhile, the first account sometimes got a 403 on its *own*
+
+  orders. The order-ownership rule is A-4. Whatever the cause, it''s in our access check and
+
+  affects every order endpoint that is limited to the owner.
+
+  '
+fail_to_pass:
+- tests/held_out/order_access_check/test_order_access_check.py::test_owner_can_read_each_of_their_orders
+- tests/held_out/order_access_check/test_order_access_check.py::test_other_customer_cannot_read_any_order
+- tests/held_out/order_access_check/test_order_access_check.py::test_other_customer_cannot_cancel_or_pay
+pass_to_pass:
+- tests/held_out/order_access_check/test_order_access_check.py::test_admin_reads_everything
+- tests/test_auth.py::test_login_and_me
+- tests/test_auth.py::test_login_failures_are_indistinguishable
+- tests/test_auth.py::test_missing_or_garbage_token_is_rejected
+- tests/test_auth.py::test_password_is_stored_hashed
+- tests/test_auth.py::test_register_creates_customer
+- tests/test_auth.py::test_register_duplicate_email_conflicts
+- tests/test_auth.py::test_register_rejects_bad_email_and_short_password
+- tests/test_auth.py::test_token_expires_on_the_injected_clock
+- tests/test_billing.py::test_add_months_clamps_to_month_length
+- tests/test_billing.py::test_change_plan_edge_cases
+- tests/test_billing.py::test_downgrade_produces_a_credit
+- tests/test_billing.py::test_only_admin_creates_plans
+- tests/test_billing.py::test_proration_unit_half_period
+- tests/test_billing.py::test_renewal_requires_period_end
+- tests/test_billing.py::test_round_half_up[value0-1]
+- tests/test_billing.py::test_round_half_up[value1--1]
+- tests/test_billing.py::test_round_half_up[value2-0]
+- tests/test_billing.py::test_round_half_up[value3-2]
+- tests/test_billing.py::test_round_half_up[value4--2]
+- tests/test_billing.py::test_subscribe_sets_first_period_and_invoice
+- tests/test_billing.py::test_subscriptions_are_private
+- tests/test_billing.py::test_upgrade_mid_period_prorates_to_the_second
+- tests/test_orders.py::test_admin_can_read_any_order
+- tests/test_orders.py::test_anonymous_cannot_order
+- tests/test_orders.py::test_audit_log_is_admin_only
+- tests/test_orders.py::test_confirmation_runs_as_background_task
+- tests/test_orders.py::test_customers_cannot_list_other_users_orders
+- tests/test_orders.py::test_empty_and_oversized_item_lists_rejected
+- tests/test_orders.py::test_fulfilment_consumes_stock
+- tests/test_orders.py::test_insufficient_stock_is_409
+- tests/test_orders.py::test_missing_order_is_404
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_0]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_1]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3]
+- tests/test_orders.py::test_order_listing_is_scoped_to_the_caller
+- tests/test_orders.py::test_other_customer_cannot_read_order
+- tests/test_orders.py::test_owner_can_read_own_order
+- tests/test_orders.py::test_pay_then_cancel_releases_stock
+- tests/test_orders.py::test_place_order_reserves_stock_and_totals
+- tests/test_orders.py::test_rejected_order_is_audited
+- tests/test_orders.py::test_repeated_products_are_merged
+- tests/test_orders.py::test_selling_exactly_the_remaining_stock_succeeds
+- tests/test_orders.py::test_unknown_product_is_404_and_leaves_stock_alone
+- tests/test_orders.py::test_unpaid_order_cannot_be_fulfilled
+- tests/test_orders.py::test_unusable_quantities_are_rejected[1001]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[None]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[abc]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[quantity3]
+- tests/test_products.py::test_bad_sort_rejected
+- tests/test_products.py::test_filter_totals
+- tests/test_products.py::test_get_product_and_404
+- tests/test_products.py::test_invalid_product_payloads_rejected
+- tests/test_products.py::test_only_admin_creates_products
+- tests/test_products.py::test_sku_is_normalised_and_unique
+- tests/test_products.py::test_stock_cannot_drop_below_reserved
+- tests/test_products.py::test_stock_view_and_update
+timeout_seconds: 120

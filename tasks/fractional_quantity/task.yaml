@@ -1,0 +1,71 @@
+id: fractional_quantity
+title: Order quantities like 2.5 or 0 are silently accepted
+difficulty: easy
+bug_class: validator silently coerces instead of rejecting
+statement: 'A partner integration reported that they ordered "2.5" units of a widget and our API happily
+
+  answered 201. The resulting order contains exactly 2 units, and they were billed for 2. A
+
+  different partner sent quantity 0 by mistake (a bug in their cart) and got an order for 1 unit,
+
+  which they then had to cancel. We would much rather they got an error telling them their
+
+  payload is wrong; domain rule O-2 says that fractional, zero and negative quantities must be
+
+  rejected, not repaired.
+
+
+  Note that we do have integrations that send whole numbers as strings ("3") or as JSON floats
+
+  (3.0), and those must keep working.
+
+  '
+fail_to_pass:
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_non_whole_or_non_positive_quantities_are_rejected[float-2.5]
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_non_whole_or_non_positive_quantities_are_rejected[str-2.5]
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_non_whole_or_non_positive_quantities_are_rejected[float-0.4]
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_non_whole_or_non_positive_quantities_are_rejected[int-0]
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_non_whole_or_non_positive_quantities_are_rejected[str-0]
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_non_whole_or_non_positive_quantities_are_rejected[int-neg]
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_non_whole_or_non_positive_quantities_are_rejected[float-negzero]
+- tests/held_out/fractional_quantity/test_fractional_quantity.py::test_a_bad_line_rejects_the_whole_request
+pass_to_pass:
+- tests/test_orders.py::test_admin_can_read_any_order
+- tests/test_orders.py::test_anonymous_cannot_order
+- tests/test_orders.py::test_audit_log_is_admin_only
+- tests/test_orders.py::test_confirmation_runs_as_background_task
+- tests/test_orders.py::test_customers_cannot_list_other_users_orders
+- tests/test_orders.py::test_empty_and_oversized_item_lists_rejected
+- tests/test_orders.py::test_fulfilment_consumes_stock
+- tests/test_orders.py::test_insufficient_stock_is_409
+- tests/test_orders.py::test_missing_order_is_404
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_0]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_1]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3]
+- tests/test_orders.py::test_order_listing_is_scoped_to_the_caller
+- tests/test_orders.py::test_other_customer_cannot_read_order
+- tests/test_orders.py::test_owner_can_read_own_order
+- tests/test_orders.py::test_pay_then_cancel_releases_stock
+- tests/test_orders.py::test_place_order_reserves_stock_and_totals
+- tests/test_orders.py::test_rejected_order_is_audited
+- tests/test_orders.py::test_repeated_products_are_merged
+- tests/test_orders.py::test_selling_exactly_the_remaining_stock_succeeds
+- tests/test_orders.py::test_unknown_product_is_404_and_leaves_stock_alone
+- tests/test_orders.py::test_unpaid_order_cannot_be_fulfilled
+- tests/test_orders.py::test_unusable_quantities_are_rejected[1001]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[None]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[abc]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[quantity3]
+- tests/test_pagination.py::test_invalid_paging_parameters_rejected
+- tests/test_pagination.py::test_list_metadata_reports_total_and_pages
+- tests/test_pagination.py::test_make_page_carries_metadata
+- tests/test_pagination.py::test_page_count
+- tests/test_pagination.py::test_page_past_the_end_is_empty
+timeout_seconds: 120
+trap:
+  shallow_patch: trap.patch
+  description: Delete the permissive before-validator and mark the quantity field `strict=True`. That
+    rejects 2.5, 0 and negative values, so every fail_to_pass test goes green.
+  why_it_fails: Strict mode also rejects the numeric string "3" and the integral float 3.0, which rule
+    O-2 requires the API to keep accepting. The visible-suite tests `test_numeric_quantities_are_accepted[...]`
+    (pass_to_pass) fail, so the shallow fix is not resolved.

@@ -1,0 +1,69 @@
+id: stale_stock_reservation
+title: Oversold the last units during a flash sale
+difficulty: hard
+bug_class: race (stale read / lost update) in reservation logic
+statement: 'During Friday''s flash sale we sold more units of some items than we had. Example: 5 gadgets
+
+  on hand, two customers checked out within a few milliseconds of each other for 4 gadgets each,
+
+  and both orders were accepted. Afterwards the stock screen said 4 gadgets were reserved, not 8,
+
+  so nothing flagged it until fulfilment ran out. A related symptom: two smaller concurrent
+
+  orders (2 + 2) left the reserved counter at 2, so later customers could still buy units that
+
+  were already promised.
+
+
+  We cannot reproduce it with one request at a time, and it only happens when requests overlap.
+
+  Rule I-2 is the requirement: two concurrent buyers must never be promised more than is
+
+  available, and no reservation may be lost. Stock changes still need to be committed per order.
+
+  '
+fail_to_pass:
+- tests/held_out/stale_stock_reservation/test_stale_stock_reservation.py::test_a_stale_session_cannot_oversell
+- tests/held_out/stale_stock_reservation/test_stale_stock_reservation.py::test_a_stale_session_does_not_erase_a_concurrent_reservation
+pass_to_pass:
+- tests/test_inventory.py::test_admin_endpoints_require_admin
+- tests/test_inventory.py::test_paid_orders_hold_stock_past_the_ttl_window
+- tests/test_inventory.py::test_reservation_records_expiry_from_the_clock
+- tests/test_inventory.py::test_reserving_against_a_missing_stock_row_is_not_found
+- tests/test_inventory.py::test_sequential_reservations_never_oversell
+- tests/test_inventory.py::test_sweep_with_nothing_reserved_is_a_noop
+- tests/test_orders.py::test_admin_can_read_any_order
+- tests/test_orders.py::test_anonymous_cannot_order
+- tests/test_orders.py::test_audit_log_is_admin_only
+- tests/test_orders.py::test_confirmation_runs_as_background_task
+- tests/test_orders.py::test_customers_cannot_list_other_users_orders
+- tests/test_orders.py::test_empty_and_oversized_item_lists_rejected
+- tests/test_orders.py::test_fulfilment_consumes_stock
+- tests/test_orders.py::test_insufficient_stock_is_409
+- tests/test_orders.py::test_missing_order_is_404
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_0]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_1]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3]
+- tests/test_orders.py::test_order_listing_is_scoped_to_the_caller
+- tests/test_orders.py::test_other_customer_cannot_read_order
+- tests/test_orders.py::test_owner_can_read_own_order
+- tests/test_orders.py::test_pay_then_cancel_releases_stock
+- tests/test_orders.py::test_place_order_reserves_stock_and_totals
+- tests/test_orders.py::test_rejected_order_is_audited
+- tests/test_orders.py::test_repeated_products_are_merged
+- tests/test_orders.py::test_selling_exactly_the_remaining_stock_succeeds
+- tests/test_orders.py::test_unknown_product_is_404_and_leaves_stock_alone
+- tests/test_orders.py::test_unpaid_order_cannot_be_fulfilled
+- tests/test_orders.py::test_unusable_quantities_are_rejected[1001]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[None]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[abc]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[quantity3]
+- tests/test_products.py::test_bad_sort_rejected
+- tests/test_products.py::test_filter_totals
+- tests/test_products.py::test_get_product_and_404
+- tests/test_products.py::test_invalid_product_payloads_rejected
+- tests/test_products.py::test_only_admin_creates_products
+- tests/test_products.py::test_sku_is_normalised_and_unique
+- tests/test_products.py::test_stock_cannot_drop_below_reserved
+- tests/test_products.py::test_stock_view_and_update
+timeout_seconds: 180

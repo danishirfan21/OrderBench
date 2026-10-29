@@ -1,0 +1,21 @@
+diff --git a/app/services/inventory_service.py b/app/services/inventory_service.py
+--- a/app/services/inventory_service.py
++++ b/app/services/inventory_service.py
+@@ -91,7 +91,7 @@
+ 
+ 
+ def seconds_remaining(reservation: Reservation, now: datetime) -> int:
+-    return int((as_utc(reservation.expires_at) - now).total_seconds())
++    return int((reservation.expires_at - now).total_seconds())
+ 
+ 
+ def active_reservations(db: Session, now: datetime) -> list[tuple[Reservation, int]]:
+@@ -107,7 +107,7 @@
+     """Release every active reservation whose expiry has passed. Returns the count."""
+     count = 0
+     for r in ReservationRepository(db).with_status("active"):
+-        if as_utc(r.expires_at) <= now:
++        if r.expires_at <= now:
+             release(db, r, "expired")
+             count += 1
+     if count:

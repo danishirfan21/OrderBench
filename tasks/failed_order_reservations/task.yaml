@@ -1,0 +1,76 @@
+id: failed_order_reservations
+title: Stock stays reserved after an order is rejected
+difficulty: medium
+bug_class: missing rollback on a failure path
+statement: 'Ops noticed that available stock keeps shrinking even though nothing is selling. Digging in,
+  it
+
+  happens when a customer''s cart contains several products and one of them is out of stock: the
+
+  customer correctly gets a 409 insufficient_stock error, but the other items in that cart stay
+
+  reserved. Our dashboard shows reserved units with no matching order lines, an order row with
+
+  no items sitting in `pending`, and a few popular items now appear sold out although the
+
+  warehouse is full.
+
+
+  Rule O-3 says a rejected order must be all-or-nothing. A rejected order must still show up in
+
+  the audit log, as it does today.
+
+  '
+fail_to_pass:
+- tests/held_out/failed_order_reservations/test_failed_order_reservations.py::test_rejected_order_holds_no_stock
+- tests/held_out/failed_order_reservations/test_failed_order_reservations.py::test_rejected_order_leaves_no_order_or_reservation_rows
+- tests/held_out/failed_order_reservations/test_failed_order_reservations.py::test_stock_is_still_sellable_after_a_rejection
+pass_to_pass:
+- tests/test_inventory.py::test_admin_endpoints_require_admin
+- tests/test_inventory.py::test_paid_orders_hold_stock_past_the_ttl_window
+- tests/test_inventory.py::test_reservation_records_expiry_from_the_clock
+- tests/test_inventory.py::test_reserving_against_a_missing_stock_row_is_not_found
+- tests/test_inventory.py::test_sequential_reservations_never_oversell
+- tests/test_inventory.py::test_sweep_with_nothing_reserved_is_a_noop
+- tests/test_orders.py::test_admin_can_read_any_order
+- tests/test_orders.py::test_anonymous_cannot_order
+- tests/test_orders.py::test_audit_log_is_admin_only
+- tests/test_orders.py::test_confirmation_runs_as_background_task
+- tests/test_orders.py::test_customers_cannot_list_other_users_orders
+- tests/test_orders.py::test_empty_and_oversized_item_lists_rejected
+- tests/test_orders.py::test_fulfilment_consumes_stock
+- tests/test_orders.py::test_insufficient_stock_is_409
+- tests/test_orders.py::test_missing_order_is_404
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_0]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_1]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3]
+- tests/test_orders.py::test_order_listing_is_scoped_to_the_caller
+- tests/test_orders.py::test_other_customer_cannot_read_order
+- tests/test_orders.py::test_owner_can_read_own_order
+- tests/test_orders.py::test_pay_then_cancel_releases_stock
+- tests/test_orders.py::test_place_order_reserves_stock_and_totals
+- tests/test_orders.py::test_rejected_order_is_audited
+- tests/test_orders.py::test_repeated_products_are_merged
+- tests/test_orders.py::test_selling_exactly_the_remaining_stock_succeeds
+- tests/test_orders.py::test_unknown_product_is_404_and_leaves_stock_alone
+- tests/test_orders.py::test_unpaid_order_cannot_be_fulfilled
+- tests/test_orders.py::test_unusable_quantities_are_rejected[1001]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[None]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[abc]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[quantity3]
+- tests/test_products.py::test_bad_sort_rejected
+- tests/test_products.py::test_filter_totals
+- tests/test_products.py::test_get_product_and_404
+- tests/test_products.py::test_invalid_product_payloads_rejected
+- tests/test_products.py::test_only_admin_creates_products
+- tests/test_products.py::test_sku_is_normalised_and_unique
+- tests/test_products.py::test_stock_cannot_drop_below_reserved
+- tests/test_products.py::test_stock_view_and_update
+timeout_seconds: 120
+trap:
+  shallow_patch: trap.patch
+  description: Roll back and re-raise, and drop the code that records the rejection in the audit log (it
+    is the audit commit that appears to be 'persisting the reservations').
+  why_it_fails: The stock and order rows are restored, so the new tests pass, but rule O-3 (and the ticket)
+    require rejections to stay in the audit log. `test_rejected_order_is_audited` (pass_to_pass) fails.
+    The correct fix keeps the audit write but performs it after the rollback.

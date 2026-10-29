@@ -1,0 +1,15 @@
+diff --git a/app/services/order_service.py b/app/services/order_service.py
+--- a/app/services/order_service.py
++++ b/app/services/order_service.py
+@@ -53,9 +53,8 @@
+             total += price * qty
+         order.total_cents = total
+         db.commit()
+-    except InsufficientStockError as exc:
+-        AuditRepository(db).add("order.rejected", exc.message, user_id, now)
+-        db.commit()
++    except InsufficientStockError:
++        db.rollback()
+         raise
+     return order
+ 

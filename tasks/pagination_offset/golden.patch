@@ -1,0 +1,12 @@
+diff --git a/app/pagination.py b/app/pagination.py
+--- a/app/pagination.py
++++ b/app/pagination.py
+@@ -14,7 +14,7 @@
+ 
+ 
+ def offset_for(page: int, size: int) -> int:
+-    return page * size
++    return (page - 1) * size
+ 
+ 
+ def page_count(total: int, size: int) -> int:

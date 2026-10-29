@@ -1,0 +1,77 @@
+id: pagination_offset
+title: First page of listings is missing its first records
+difficulty: easy
+bug_class: off-by-one in pagination offset
+statement: 'Support ticket #4471, from the storefront team:
+
+
+  "Our catalogue page shows the wrong products. We have 50 products and the page size is 10.
+
+  Page 1 starts at ''Item 011'' instead of at the first product, and the last page (page 5)
+
+  comes back empty even though the response says `pages: 5`. When we walk through all the pages
+
+  we only ever see 40 of the 50 products. The same thing happens on the ''My orders'' screen: the
+
+  newest orders are never shown on the first page."
+
+
+  Expected behaviour is in the pagination rules of the domain notes: page 1 holds the first
+
+  `size` rows of the ordering. Please fix.
+
+  '
+fail_to_pass:
+- tests/held_out/pagination_offset/test_pagination_offset.py::test_first_page_starts_at_first_record
+- tests/held_out/pagination_offset/test_pagination_offset.py::test_pages_partition_the_catalogue
+- tests/held_out/pagination_offset/test_pagination_offset.py::test_last_page_holds_the_remainder
+- tests/held_out/pagination_offset/test_pagination_offset.py::test_order_listing_first_page_is_newest
+pass_to_pass:
+- tests/test_auth.py::test_login_and_me
+- tests/test_auth.py::test_login_failures_are_indistinguishable
+- tests/test_auth.py::test_missing_or_garbage_token_is_rejected
+- tests/test_auth.py::test_password_is_stored_hashed
+- tests/test_auth.py::test_register_creates_customer
+- tests/test_auth.py::test_register_duplicate_email_conflicts
+- tests/test_auth.py::test_register_rejects_bad_email_and_short_password
+- tests/test_auth.py::test_token_expires_on_the_injected_clock
+- tests/test_orders.py::test_admin_can_read_any_order
+- tests/test_orders.py::test_anonymous_cannot_order
+- tests/test_orders.py::test_audit_log_is_admin_only
+- tests/test_orders.py::test_confirmation_runs_as_background_task
+- tests/test_orders.py::test_customers_cannot_list_other_users_orders
+- tests/test_orders.py::test_empty_and_oversized_item_lists_rejected
+- tests/test_orders.py::test_fulfilment_consumes_stock
+- tests/test_orders.py::test_insufficient_stock_is_409
+- tests/test_orders.py::test_missing_order_is_404
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_0]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3.0_1]
+- tests/test_orders.py::test_numeric_quantities_are_accepted[3]
+- tests/test_orders.py::test_order_listing_is_scoped_to_the_caller
+- tests/test_orders.py::test_other_customer_cannot_read_order
+- tests/test_orders.py::test_owner_can_read_own_order
+- tests/test_orders.py::test_pay_then_cancel_releases_stock
+- tests/test_orders.py::test_place_order_reserves_stock_and_totals
+- tests/test_orders.py::test_rejected_order_is_audited
+- tests/test_orders.py::test_repeated_products_are_merged
+- tests/test_orders.py::test_selling_exactly_the_remaining_stock_succeeds
+- tests/test_orders.py::test_unknown_product_is_404_and_leaves_stock_alone
+- tests/test_orders.py::test_unpaid_order_cannot_be_fulfilled
+- tests/test_orders.py::test_unusable_quantities_are_rejected[1001]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[None]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[abc]
+- tests/test_orders.py::test_unusable_quantities_are_rejected[quantity3]
+- tests/test_pagination.py::test_invalid_paging_parameters_rejected
+- tests/test_pagination.py::test_list_metadata_reports_total_and_pages
+- tests/test_pagination.py::test_make_page_carries_metadata
+- tests/test_pagination.py::test_page_count
+- tests/test_pagination.py::test_page_past_the_end_is_empty
+- tests/test_products.py::test_bad_sort_rejected
+- tests/test_products.py::test_filter_totals
+- tests/test_products.py::test_get_product_and_404
+- tests/test_products.py::test_invalid_product_payloads_rejected
+- tests/test_products.py::test_only_admin_creates_products
+- tests/test_products.py::test_sku_is_normalised_and_unique
+- tests/test_products.py::test_stock_cannot_drop_below_reserved
+- tests/test_products.py::test_stock_view_and_update
+timeout_seconds: 120

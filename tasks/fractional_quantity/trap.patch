@@ -1,0 +1,21 @@
+diff --git a/app/schemas.py b/app/schemas.py
+--- a/app/schemas.py
++++ b/app/schemas.py
+@@ -81,16 +81,7 @@
+ 
+ class OrderItemIn(BaseModel):
+     product_id: int = Field(gt=0)
+-    quantity: int = Field(gt=0, le=1000)
+-
+-    @field_validator("quantity", mode="before")
+-    @classmethod
+-    def _coerce_quantity(cls, value: object) -> object:
+-        # accept clients that send 2.0 or "2" for whole quantities
+-        try:
+-            return max(1, int(float(str(value))))
+-        except ValueError:
+-            return value
++    quantity: int = Field(gt=0, le=1000, strict=True)
+ 
+ 
+ class OrderCreate(BaseModel):
